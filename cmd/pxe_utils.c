@@ -257,7 +257,7 @@ static struct pxe_label *label_create(void)
 
 /*
  * Free the memory used by a pxe_label, including that used by its name,
- * kernel, append and initrd members, if they're non NULL.
+ * kernel, append, addappend and initrd members, if they're non NULL.
  *
  * So - be sure to only use dynamically allocated memory for the members of
  * the pxe_label struct, unless you want to clean it up first. These are
@@ -276,6 +276,9 @@ static void label_destroy(struct pxe_label *label)
 
 	if (label->append)
 		free(label->append);
+
+	if (label->addappend)
+		free(label->addappend);
 
 	if (label->initrd)
 		free(label->initrd);
@@ -311,7 +314,9 @@ static void label_print(void *data)
  * environment variable is defined. Its contents will be executed as U-Boot
  * command.  If the label specified an 'append' line, its contents will be
  * used to overwrite the contents of the 'bootargs' environment variable prior
- * to running 'localcmd'.
+ * to running 'localcmd'. If the label specified an 'addappend' line, it's
+ * contents will be appended to the 'bootargs' environment variable priot to
+ * running 'localcmd'.
  *
  * Returns 1 on success or < 0 on error.
  */
@@ -323,6 +328,23 @@ static int label_localboot(struct pxe_label *label)
 
 	if (!localcmd)
 		return -ENOENT;
+
+	if (label->addappend) {
+		char newbootargs[CONFIG_SYS_CBSIZE] = "";
+		char addappend[CONFIG_SYS_CBSIZE];
+
+		strncat(newbootargs, env_get("bootargs"), CONFIG_SYS_CBSIZE - 1);
+
+		cli_simple_process_macros(label->addappend, addappend,
+					  sizeof(addappend));
+
+		if (strlen(newbootargs) + 1 < CONFIG_SYS_CBSIZE)
+			strcat(newbootargs, " ");
+		strncat(newbootargs, addappend,
+			CONFIG_SYS_CBSIZE - strlen(newbootargs) - 1);
+
+		env_set("bootargs", newbootargs);
+	}
 
 	if (label->append) {
 		char bootargs[CONFIG_SYS_CBSIZE];
@@ -437,6 +459,9 @@ skip_overlay:
  *
  * If the label specifies an 'append' line, its contents will overwrite that
  * of the 'bootargs' environment variable.
+ *
+ * If the label specifies an 'addappend' line, it's contents will be appended
+ * to the 'bootargs' environment variable.
  */
 static int label_boot(struct cmd_tbl *cmdtp, struct pxe_label *label)
 {
@@ -503,17 +528,26 @@ static int label_boot(struct cmd_tbl *cmdtp, struct pxe_label *label)
 		}
 	}
 
-	if ((label->ipappend & 0x3) || label->append) {
+	if ((label->ipappend & 0x3) || label->append || label->addappend) {
 		char bootargs[CONFIG_SYS_CBSIZE] = "";
 		char finalbootargs[CONFIG_SYS_CBSIZE];
 
-		if (strlen(label->append ?: "") +
+		if (strlen(label->append ?: "") + strlen(label->addappend ?: "") +
 		    strlen(ip_str) + strlen(mac_str) + 1 > sizeof(bootargs)) {
-			printf("bootarg overflow %zd+%zd+%zd+1 > %zd\n",
+			printf("bootarg overflow %zd+%zd+%zd+%zd+1 > %zd\n",
 			       strlen(label->append ?: ""),
+			       strlen(label->addappend ?: ""),
 			       strlen(ip_str), strlen(mac_str),
 			       sizeof(bootargs));
 			return 1;
+		}
+
+		if (label->addappend) {
+			strncat(bootargs, env_get("bootargs"), CONFIG_SYS_CBSIZE - 1);
+			if (strlen(bootargs) + 1 < CONFIG_SYS_CBSIZE)
+				strcat(bootargs, " ");
+			strncat(bootargs, label->addappend,
+				CONFIG_SYS_CBSIZE - strlen(bootargs) - 1);
 		}
 
 		if (label->append)
@@ -681,6 +715,7 @@ enum token_type {
 	T_KERNEL,
 	T_LINUX,
 	T_APPEND,
+	T_ADDAPPEND,
 	T_INITRD,
 	T_LOCALBOOT,
 	T_DEFAULT,
@@ -717,6 +752,7 @@ static const struct token keywords[] = {
 	{"linux", T_LINUX},
 	{"localboot", T_LOCALBOOT},
 	{"append", T_APPEND},
+	{"addappend", T_ADDAPPEND},
 	{"initrd", T_INITRD},
 	{"include", T_INCLUDE},
 	{"devicetree", T_FDT},
@@ -1139,6 +1175,10 @@ static int parse_label(char **c, struct pxe_menu *cfg)
 			strncpy(label->initrd, s, len);
 			label->initrd[len] = '\0';
 
+			break;
+
+		case T_ADDAPPEND:
+			err = parse_sliteral(c, &label->addappend);
 			break;
 
 		case T_INITRD:

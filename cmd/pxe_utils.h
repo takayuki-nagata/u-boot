@@ -28,6 +28,7 @@
  * name - the name of the menu as given on the 'menu label' line.
  * kernel - the path to the kernel file to use for this label.
  * append - kernel command line to use when booting this label
+ * addappend - additional kernel command line options
  * initrd - path to the initrd to use for this label.
  * attempted - 0 if we haven't tried to boot this label, 1 if we have.
  * localboot - 1 if this label specified 'localboot', 0 otherwise.
@@ -40,6 +41,7 @@ struct pxe_label {
 	char *kernel;
 	char *config;
 	char *append;
+	char *addappend;
 	char *initrd;
 	char *fdt;
 	char *fdtdir;
