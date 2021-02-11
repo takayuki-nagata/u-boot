@@ -35,6 +35,15 @@
 	"scriptaddr=0x88100000\0" \
 	"pxefile_addr_r=0x88200000\0" \
 	"ramdisk_addr_r=0x88300000\0" \
+	"kernel_comp_addr_r=0x90000000\0" \
+	"kernel_comp_size=0x1000000\0" \
 	BOOTENV
+
+#ifdef CONFIG_BOOTCOMMAND
+#undef CONFIG_BOOTCOMMAND
+#endif
+#define CONFIG_BOOTCOMMAND \
+        "setenv fdt_addr ${fdtcontroladdr};" \
+        "run distro_bootcmd;"
 
 #endif /* __CONFIG_H */
