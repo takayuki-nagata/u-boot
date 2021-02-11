@@ -201,7 +201,7 @@
 			clock-frequency = <RTCCLK_FREQ>;
 		};
 		cachecontroller: cache-controller@2010000 {
-			compatible = "sifive,fu540-c000-ccache", "cache";
+			#compatible = "sifive,fu540-c000-ccache", "cache";
 			cache-block-size = <64>;
 			cache-level = <2>;
 			cache-sets = <1024>;
