@@ -267,7 +267,7 @@
 			no-sd;
 			no-sdio;
 			voltage-ranges = <3300 3300>;
-			status = "okay";
+			status = "disabled";
 		};
 		sdcard: sd@20008000 {
 			compatible = "cdns,sd4hc";
@@ -285,7 +285,7 @@
 			sd-uhs-sdr50;
 			sd-uhs-sdr104;
 			max-frequency = <200000000>;
-			status = "disabled";
+			status = "okay";
 		};
 		uart1: serial@20100000 {
 			compatible = "ns16550a";
