@@ -367,7 +367,7 @@
 			};
 		};
 		emac0: ethernet@20110000 {
-			compatible = "microchip,mpfs-mss-gem";
+			compatible = "cdns,macb";
 			reg = <0x0 0x20110000 0x0 0x2000>;
 			interrupt-parent = <&plic>;
 			interrupts = <64 65 66 67>;
@@ -386,7 +386,7 @@
 			};
 		};
 		emac1: ethernet@20112000 {
-			compatible = "microchip,mpfs-mss-gem";
+			compatible = "cdns,macb";
 			reg = <0x0 0x20112000 0x0 0x2000>;
 			interrupt-parent = <&plic>;
 			interrupts = <70 71 72 73>;
